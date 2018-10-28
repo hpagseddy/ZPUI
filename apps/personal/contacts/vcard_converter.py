@@ -2,9 +2,7 @@ from helpers import setup_logger
 logger = setup_logger(__name__, "warning")
 
 import vobject
-
-from address_book import Contact
-
+from contact import Contact
 
 class VCardContactConverter(object):
     vcard_mapping = {

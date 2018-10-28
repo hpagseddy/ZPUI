@@ -4,14 +4,17 @@ import doctest
 
 import os
 
-from address_book import AddressBook, ZPUI_HOME, Contact
+from address_book import AddressBook, ZPUI_HOME
+from contact import Contact
 from apps import ZeroApp
 from helpers import setup_logger
-from ui import NumberedMenu, Listbox
-from vcard_converter import VCardContactConverter
+from ui import NumberedMenu, Listbox, Menu, LoadingIndicator, Printer
+from distutils.spawn import find_executable
 
 logger = setup_logger(__name__, "info")
 
+VDIRSYNCER_CONFIG = '/tmp/vdirsyncer_config'
+VDIRSYNCER_VCF_DIRECOTRY = '/tmp/contacts/contacts'
 
 class ContactApp(ZeroApp):
     def __init__(self, i, o):
@@ -19,42 +22,76 @@ class ContactApp(ZeroApp):
         self.menu_name = "Contacts"
         self.address_book = AddressBook()
         self.menu = None
+        self.vdirsyncer_executable = find_executable('vdirsyncer')
 
     def on_start(self):
         self.address_book.load_from_file()
-        self.menu = NumberedMenu(self.create_menu_content(), self.i, self.o, prepend_numbers=False)
+        self.menu = NumberedMenu(self.build_main_menu_content(), i=self.i,
+                                 o=self.o, prepend_numbers=False)
         self.menu.activate()
 
-    def create_menu_content(self):
+    def build_main_menu_content(self):
         all_contacts = self.address_book.contacts
-        return [[c.short_name(), lambda x=c: self.create_contact_page(x)] for c in all_contacts]
+        menu_entries = []
+        menu_entries.append(["|| Actions", lambda: self.open_actions_menu()])
+        for c in all_contacts:
+            menu_entries.append([c.short_name(), lambda x=c:
+                                 self.open_contact_details_page(x)])
 
-    def create_contact_page(self, contact):
+        return menu_entries
+
+    def open_contact_details_page(self, contact):
         # type: (Contact) -> None
-        contact_attrs = [getattr(contact, a) for a in contact.get_filled_attributes()]
+        contact_attrs = [getattr(contact, a) for a in
+                         contact.get_filled_attributes()]
         Listbox(i=self.i, o=self.o, contents=contact_attrs).activate()
 
+    def open_actions_menu(self):
+        menu_contents = [
+            ["Configure", lambda: self.open_settings_page()],
+            ["Synchronize", lambda: self.synchronize_carddav(lambda: self.open_actions_menu())]
+        ]
+        Menu(menu_contents, i=self.i, o=self.o, name="My menu").activate()
 
-def find_contact_files(folder):
-    # type: (str) -> list(str)
-    home = os.path.expanduser(folder)
-    if not os.path.exists(home):
-        os.mkdir(home)
-    contact_card_files = [os.path.join(home, f) for f in os.listdir(home) if f.lower().endswith("vcf")]
-    return contact_card_files
+    def open_settings_page(self):
+        if self.vdirsyncer_executable:
+            vdirsyncer_executable = self.vdirsyncer_executable
+        else:
+            vdirsyncer_executable = 'Not found'
 
+        attrs = [
+            ["-- VdirSyncer"],
+            ["Executable: {}".format(vdirsyncer_executable) ],
+            ["Config: {}".format(VDIRSYNCER_CONFIG)]
+        ]
+        Listbox(i=self.i, o=self.o, contents=attrs).activate()
 
-def load_vcf(folder):
-    # type: (str) -> None
-    contact_card_files = find_contact_files(folder)
-    contacts = VCardContactConverter.from_vcards(contact_card_files)
+    def synchronize_carddav(self, callback):
+        if (not os.path.isfile(self.vdirsyncer_executable) or
+        not os.access(self.vdirsyncer_executable, os.X_OK)):
+            Printer('Could not execute vdirsyncer.', i=self.i, o=self.o,
+                    sleep_time=2, skippable=True)
+            callback()
+            return;
 
-    address_book = AddressBook()
-    for contact in contacts:
-        address_book.add_contact(contact)
-    address_book.save_to_file()
-    logger.info("Saved to {}".format(address_book.get_save_file_path()))
+        vdirsyncer_command = "{} -c {} sync contacts".format(
+            self.vdirsyncer_executable, VDIRSYNCER_CONFIG
+        )
+        logger.info("Calling vdirsyncer to synchronize contacts")
+        with LoadingIndicator(self.i, self.o, message="Syncing contacts"):
+            exit_status = os.system(vdirsyncer_command)
 
+        if (exit_status != 0):
+            error_msg = 'Error in contact synchronization. Did you configure \
+            vdirsyncer?'
+            Printer(error_msg, i=self.i, o=self.o, sleep_time=2,
+                    skippable=True)
+
+        with LoadingIndicator(self.i, self.o, message="Importing contacts"):
+            self.address_book.import_vcards_from_directory(VDIRSYNCER_VCF_DIRECOTRY)
+            self.address_book.save_to_file()
+
+        callback()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -67,4 +104,6 @@ if __name__ == '__main__':
         logger.info("Running tests...")
         doctest.testmod()
 
-    load_vcf(arguments.src_folder)
+    address_book = AddressBook()
+    address_book.import_vcards_from_directory(arguments.src_folder)
+    address_book.save_to_file()
