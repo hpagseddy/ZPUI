@@ -131,14 +131,11 @@ class AddressBook(Singleton):
         # Import into current AddressBook instance
         parsed_contacts = VCardContactConverter.from_vcards(vcard_files)
         for new in parsed_contacts:
-            is_duplicate = False
-            for existing in self._contacts:
-                if (new == existing):
-                    is_duplicate = True
-                    break
+            is_duplicate = new in self._contacts
 
-            if not is_duplicate:
-                self.add_contact(new)
-            else:
+            if is_duplicate:
                 logger.info("Contacts: ignore duplicated contact for: {}"
                             .format(new.name))
+                break
+
+            self.add_contact(new)
