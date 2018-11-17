@@ -3,7 +3,6 @@ import pickle
 
 from helpers import Singleton, flatten
 from helpers import setup_logger
-#from vcard_converter import VCardContactConverter
 
 logger = setup_logger(__name__, "warning")
 

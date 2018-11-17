@@ -8,13 +8,14 @@ from address_book import AddressBook, ZPUI_HOME
 from contact import Contact
 from apps import ZeroApp
 from helpers import setup_logger
-from ui import NumberedMenu, Listbox, Menu, LoadingIndicator, Printer
+from ui import NumberedMenu, Listbox, Menu, LoadingIndicator, Printer, DialogBox
 from distutils.spawn import find_executable
 
 logger = setup_logger(__name__, "info")
 
-VDIRSYNCER_CONFIG = '/tmp/vdirsyncer_config'
-VDIRSYNCER_VCF_DIRECOTRY = '/tmp/contacts/contacts'
+# FIXME: load from config module?
+VDIRSYNCER_CONFIG = '~/.config/vdirsyncer/config'
+VDIRSYNCER_VCF_DIRECOTRY = '~/.local/share/vdirsyncer/contacts/contacts'
 
 class ContactApp(ZeroApp):
     def __init__(self, i, o):
@@ -25,6 +26,9 @@ class ContactApp(ZeroApp):
         self.vdirsyncer_executable = find_executable('vdirsyncer')
 
     def on_start(self):
+        self.reload()
+
+    def reload(self):
         self.address_book.load_from_file()
         self.menu = NumberedMenu(self.build_main_menu_content(), i=self.i,
                                  o=self.o, prepend_numbers=False)
@@ -48,8 +52,9 @@ class ContactApp(ZeroApp):
 
     def open_actions_menu(self):
         menu_contents = [
-            ["Configure", lambda: self.open_settings_page()],
-            ["Synchronize", lambda: self.synchronize_carddav(lambda: self.open_actions_menu())]
+            ["Settings", lambda: self.open_settings_page()],
+            ["CardDAV Import", lambda: self.synchronize_carddav()],
+            ["Reset address book", lambda: self.reset_addressbook()]
         ]
         Menu(menu_contents, i=self.i, o=self.o, name="My menu").activate()
 
@@ -66,7 +71,19 @@ class ContactApp(ZeroApp):
         ]
         Listbox(i=self.i, o=self.o, contents=attrs).activate()
 
-    def synchronize_carddav(self, callback):
+    def reset_addressbook(self):
+        alert = "This action will delete all of your contacts. Are you sure?"
+        do_reset = DialogBox('yc', i=self.i, o=self.o, message=alert,
+                             name="Address book reset").activate()
+
+        if do_reset:
+            self.address_book.reset()
+            announce = "All of your contacts were deleted."
+            Printer(announce, i=self.i, o=self.o, sleep_time=2, skippable=True)
+            # Reload the now empty address book
+            self.reload()
+
+    def synchronize_carddav(self):
         if (not os.path.isfile(self.vdirsyncer_executable) or
         not os.access(self.vdirsyncer_executable, os.X_OK)):
             Printer('Could not execute vdirsyncer.', i=self.i, o=self.o,
@@ -82,16 +99,18 @@ class ContactApp(ZeroApp):
             exit_status = os.system(vdirsyncer_command)
 
         if (exit_status != 0):
-            error_msg = 'Error in contact synchronization. Did you configure \
-            vdirsyncer?'
-            Printer(error_msg, i=self.i, o=self.o, sleep_time=2,
+            error_msg = "Error in contact synchronization. Did you configure \
+            vdirsyncer?"
+            Printer(error_msg, i=self.i, o=self.o, sleep_time=3,
                     skippable=True)
+            self.open_actions_menu()
 
         with LoadingIndicator(self.i, self.o, message="Importing contacts"):
             self.address_book.import_vcards_from_directory(VDIRSYNCER_VCF_DIRECOTRY)
             self.address_book.save_to_file()
 
-        callback()
+        # Reload the synced address book
+        self.reload()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

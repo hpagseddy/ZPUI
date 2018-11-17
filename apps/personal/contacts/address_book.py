@@ -8,6 +8,9 @@ from contact import Contact
 
 logger = setup_logger(__name__, "warning")
 
+# FIXME: load from config module?
+SAVE_FILENAME = "contacts.pickle"
+ZPUI_HOME = "~/.phone/"
 
 class AddressBook(Singleton):
     def __init__(self):
@@ -75,6 +78,10 @@ class AddressBook(Singleton):
         with open(self.get_save_file_path(), 'w') as f_save:
             pickle.dump(self._contacts, f_save)
 
+    def reset(self):
+        self._contacts = []
+        self.save_to_file()
+
     @staticmethod
     def get_save_file_path():
         path = os.environ.get("XDG_DATA_HOME")
@@ -124,7 +131,5 @@ class AddressBook(Singleton):
         # Import into current AddressBook instance
         parsed_contacts = VCardContactConverter.from_vcards(vcard_files)
         for c in parsed_contacts:
+            best_duplicate = self.find_duplicates(c)
             self.add_contact(c)
-
-SAVE_FILENAME = "contacts.pickle"
-ZPUI_HOME = "~/.phone/"
