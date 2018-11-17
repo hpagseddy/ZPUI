@@ -28,6 +28,12 @@ class Contact(object):
         self.title = []
         self.from_kwargs(kwargs)
 
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    def __str__(self):
+        return str(self.__dict__)
+
     def from_kwargs(self, kwargs):
         provided_attrs = {attr: kwargs[attr] for attr in self.get_all_attributes() if attr in kwargs.keys()}
         for attr_name in provided_attrs:

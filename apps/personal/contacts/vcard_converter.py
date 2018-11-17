@@ -26,6 +26,10 @@ class VCardContactConverter(object):
             attr = getattr(contact, VCardContactConverter.vcard_mapping[key])
             assert type(attr) == list
             attr += [v.value for v in v_contact.contents[key]]
+
+        # Remove duplicated attributes due to 'fn' and 'n' both mapping to 'name'
+        contact.consolidate()
+
         return contact
 
     @staticmethod
