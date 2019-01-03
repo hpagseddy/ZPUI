@@ -119,7 +119,7 @@ class AddressBook(Singleton):
         return sorted(match_score_contact_list, cmp=cmp)
 
     def import_vcards_from_directory(self, directory):
-        logger.info("Contacts: import vCards from {}".format(directory))
+        logger.info("Import vCards from {}".format(directory))
 
         # Extract *cvf files from the directory
         home = os.path.expanduser(directory)
@@ -134,7 +134,7 @@ class AddressBook(Singleton):
             is_duplicate = new in self._contacts
 
             if is_duplicate:
-                logger.info("Contacts: ignore duplicated contact for: {}"
+                logger.info("Ignore duplicated contact for: {}"
                             .format(new.name))
                 break
 
