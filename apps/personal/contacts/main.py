@@ -8,8 +8,8 @@ from address_book import AddressBook, ZPUI_HOME
 from contact import Contact
 from apps import ZeroApp
 from helpers import setup_logger
-from ui import (NumberedMenu, Listbox, Menu, LoadingIndicator, Printer,
-                DialogBox, UniversalInput)
+from ui import (NumberedMenu, Listbox, Menu, LoadingIndicator, DialogBox,
+                PrettyPrinter as Printer,  UniversalInput)
 from distutils.spawn import find_executable
 from helpers.vdirsyncer import (vdirsyncer_sync, vdirsyncer_discover,
                                 vdirsyncer_set_carddav_remote,
@@ -31,14 +31,13 @@ class ContactApp(ZeroApp):
 
     def reload(self):
         self.address_book.load_from_file()
-        self.menu = NumberedMenu(self.build_main_menu_content(), i=self.i,
-                                 o=self.o, prepend_numbers=False)
+        self.menu = NumberedMenu(self.build_main_menu_content(), self.i,
+                                 self.o, prepend_numbers=False)
         self.menu.activate()
 
     def build_main_menu_content(self):
         all_contacts = self.address_book.contacts
-        menu_entries = []
-        menu_entries.append(['|| Actions', lambda: self.open_actions_menu()])
+        menu_entries = [['|| Actions', lambda: self.open_actions_menu()]]
         for c in all_contacts:
             menu_entries.append([c.short_name(), lambda x=c:
                                  self.open_contact_details_page(x)])
@@ -49,7 +48,7 @@ class ContactApp(ZeroApp):
         # type: (Contact) -> None
         contact_attrs = [getattr(contact, a) for a in
                          contact.get_filled_attributes()]
-        Listbox(i=self.i, o=self.o, contents=contact_attrs).activate()
+        Listbox(contact_attrs, self.i, self.o).activate()
 
     def open_actions_menu(self):
         menu_contents = [
@@ -57,26 +56,25 @@ class ContactApp(ZeroApp):
             ['CardDAV Sync', lambda: self.synchronize_carddav()],
             ['Reset address book', lambda: self.reset_addressbook()]
         ]
-        Menu(menu_contents, i=self.i, o=self.o, name='My menu').activate()
+        Menu(menu_contents, self.i, self.o, name='My menu').activate()
 
     def reset_addressbook(self):
         alert = 'This action will delete all of your contacts. Are you sure?'
-        do_reset = DialogBox('yc', i=self.i, o=self.o, message=alert,
+        do_reset = DialogBox('yc', self.i, self.o, message=alert,
                              name='Address book reset').activate()
 
         if do_reset:
             self.address_book.reset()
             announce = 'All of your contacts were deleted.'
-            Printer(announce, i=self.i, o=self.o, sleep_time=2, skippable=True)
+            Printer(announce, self.i, self.o, sleep_time=2, skippable=True)
             # Reload the now empty address book
             self.reload()
 
     def synchronize_carddav(self):
         if (not os.path.isfile(self.vdirsyncer_executable) or
         not os.access(self.vdirsyncer_executable, os.X_OK)):
-            Printer('Could not execute vdirsyncer.', i=self.i, o=self.o,
+            Printer('Could not execute vdirsyncer.', self.i, self.o,
                     sleep_time=2, skippable=True)
-            callback()
             return;
 
         with LoadingIndicator(self.i, self.o, message='Syncing contacts'):
@@ -85,8 +83,7 @@ class ContactApp(ZeroApp):
         if (exit_status != 0):
             error_msg = "Error in contact synchronization. See ZPUI logs for \
             details."
-            Printer(error_msg, i=self.i, o=self.o, sleep_time=3,
-                    skippable=True)
+            Printer(error_msg, self.i, self.o, sleep_time=3)
             self.open_actions_menu()
 
         with LoadingIndicator(self.i, self.o, message='Importing contacts'):
@@ -126,8 +123,7 @@ class ContactApp(ZeroApp):
         if (exit_status != 0):
             error_msg = "Error in remote initialization. Check vdirsyncer \
             configuration"
-            Printer(error_msg, i=self.i, o=self.o, sleep_time=3,
-                    skippable=True)
+            Printer(error_msg, self.i, self.o, sleep_time=3)
             return
 
         # Synchronize contacts if the user request it

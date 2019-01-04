@@ -35,9 +35,8 @@ class Contact(object):
         return str(self.__dict__)
 
     def from_kwargs(self, kwargs):
-        provided_attrs = {attr: kwargs[attr] for attr in self.get_all_attributes() if attr in kwargs.keys()}
-        for attr_name in provided_attrs:
-            attr_value = provided_attrs[attr_name]
+        provided_attrs = {attr: kwargs[attr] for attr in self.get_all_attributes() if attr in kwargs}
+        for attr_name, attr_value in provided_attrs.items():
             if isinstance(attr_value, list):
                 setattr(self, attr_name, attr_value)
             else:
