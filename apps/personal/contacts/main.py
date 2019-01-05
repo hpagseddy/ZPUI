@@ -4,17 +4,17 @@ import doctest
 
 import os
 
-from address_book import AddressBook, ZPUI_HOME
-from contact import Contact
 from apps import ZeroApp
 from helpers import setup_logger
 from ui import (NumberedMenu, Listbox, Menu, LoadingIndicator, DialogBox,
                 PrettyPrinter as Printer,  UniversalInput)
 from distutils.spawn import find_executable
-from helpers.vdirsyncer import (vdirsyncer_sync, vdirsyncer_discover,
-                                vdirsyncer_set_carddav_remote,
-                                vdirsyncer_get_storage_directory_for,
-                                vdirsyncer_generate_config)
+
+from libs.address_book import AddressBook, Contact
+from libs.webdav.vdirsyncer import (vdirsyncer_sync, vdirsyncer_discover,
+                                    vdirsyncer_set_carddav_remote,
+                                    vdirsyncer_get_storage_directory_for,
+                                    vdirsyncer_generate_config)
 
 logger = setup_logger(__name__, 'info')
 

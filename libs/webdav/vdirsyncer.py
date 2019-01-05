@@ -11,8 +11,7 @@ DEFAULT_VDIRSYNCER_BINARY = '/usr/bin/vdirsyncer'
 DEFAULT_VDIRSYNCER_CONFIG_FILE = os.path.join(XDG_CONFIG_HOME,
                                               'vdirsyncer',
                                               'zp_config')
-#DEFAULT_VDIRSYNCER_STORAGE_DIRECTORY = os.path.join(XDG_DATA_HOME, 'vdirsyncer')
-DEFAULT_VDIRSYNCER_STORAGE_DIRECTORY = os.path.join('/tmp', 'vdirsyncer')
+DEFAULT_VDIRSYNCER_STORAGE_DIRECTORY = os.path.join(XDG_DATA_HOME, 'vdirsyncer')
 
 def vdirsyncer_sync(vdirsyncer_pair):
     return vdirsyncer_execute(['sync', vdirsyncer_pair])
@@ -91,9 +90,9 @@ def vdirsyncer_generate_config():
 
     logger.info('Generating vdirsyncer configuration')
 
-    jinja2_env = Environment(loader=FileSystemLoader('helpers/vdirsyncer'),
+    jinja2_env = Environment(loader=FileSystemLoader('libs/webdav'),
                              trim_blocks=True)
-    template = jinja2_env.get_template('config.j2')
+    template = jinja2_env.get_template('vdirsyncer_config.j2')
     rendered_vdirsyncer_config = template.render(
         contacts=zp_vdirsyncer_config['contacts'],
         status_directory=status_directory
