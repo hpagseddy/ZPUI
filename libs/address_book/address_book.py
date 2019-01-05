@@ -1,16 +1,13 @@
 import os
 import pickle
 
-from helpers import Singleton, flatten
-from helpers import setup_logger
+from helpers import ZP_DATA_DIR, Singleton, flatten, setup_logger
 from vcard_converter import VCardContactConverter
 from contact import Contact
 
 logger = setup_logger(__name__, "warning")
 
-# FIXME: load from config module?
 SAVE_FILENAME = "contacts.pickle"
-ZPUI_HOME = "~/.phone/"
 
 class AddressBook(Singleton):
     def __init__(self):
@@ -42,9 +39,7 @@ class AddressBook(Singleton):
         >>> len(a.contacts)
         2
 
-
         """
-        # todo : encrypt ?
         self._contacts = []
 
     @property
@@ -84,10 +79,7 @@ class AddressBook(Singleton):
 
     @staticmethod
     def get_save_file_path():
-        path = os.environ.get("XDG_DATA_HOME")
-        if path:
-            return os.path.join(path, SAVE_FILENAME)
-        return os.path.join(os.path.expanduser(ZPUI_HOME), SAVE_FILENAME)
+        return os.path.join(ZP_DATA_DIR, SAVE_FILENAME)
 
     def find(self, **kwargs):
         # type: (dict) -> Contact

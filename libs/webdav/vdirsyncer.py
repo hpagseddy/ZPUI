@@ -1,6 +1,5 @@
 from jinja2 import Template, Environment, FileSystemLoader
-from helpers.config_parse import write_config
-from helpers.xdg import XDG_CONFIG_HOME, XDG_DATA_HOME
+from helpers import ZP_CONFIG_DIR, ZP_DATA_DIR, write_config
 from main import load_config
 import os
 
@@ -8,10 +7,9 @@ from helpers.logger import setup_logger
 logger = setup_logger(__name__, "info")
 
 DEFAULT_VDIRSYNCER_BINARY = '/usr/bin/vdirsyncer'
-DEFAULT_VDIRSYNCER_CONFIG_FILE = os.path.join(XDG_CONFIG_HOME,
-                                              'vdirsyncer',
-                                              'zp_config')
-DEFAULT_VDIRSYNCER_STORAGE_DIRECTORY = os.path.join(XDG_DATA_HOME, 'vdirsyncer')
+DEFAULT_VDIRSYNCER_CONFIG_FILE = os.path.join(ZP_CONFIG_DIR,
+                                              'vdirsyncer_config')
+DEFAULT_VDIRSYNCER_STORAGE_DIRECTORY = os.path.join(ZP_DATA_DIR, 'vdirsyncer')
 
 def vdirsyncer_sync(vdirsyncer_pair):
     return vdirsyncer_execute(['sync', vdirsyncer_pair])
@@ -50,7 +48,7 @@ def vdirsyncer_set_carddav_remote(url, username, password):
         },
         'local': {
             'type': 'filesystem',
-            'path': contacts_storage_directory, 
+            'path': contacts_storage_directory,
             'fileext': '.vcf'
         },
         'remote': {
@@ -103,6 +101,7 @@ def vdirsyncer_generate_config():
     )
 
     logger.info('Writing vdirsyncer configuration')
+    # FIXME: ensure file is not world-readable
     with open(vdirsyncer_config_file, 'w') as fh:
         fh.write(rendered_vdirsyncer_config)
         fh.close
