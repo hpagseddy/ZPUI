@@ -24,7 +24,6 @@ class ContactApp(ZeroApp):
         self.reload()
 
     def reload(self):
-        self.address_book.load_from_file()
         self.menu = NumberedMenu(self.build_main_menu_content(), self.i,
                                  self.o, prepend_numbers=False)
         self.menu.activate()
@@ -78,7 +77,6 @@ class ContactApp(ZeroApp):
             self.address_book.import_vcards_from_directory(
                 vdirsyncer.get_storage_directory_for('contacts')
             )
-            self.address_book.save_to_file()
 
         # Reload the synced address book
         self.reload()

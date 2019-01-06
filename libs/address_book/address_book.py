@@ -11,7 +11,9 @@ SAVE_FILENAME = "contacts.pickle"
 
 class AddressBook(Singleton):
     def __init__(self):
-        """
+        """ This class provides the address book used by the Contacts
+        application.
+
         Adds a single contact
         >>> a = AddressBook()
         >>> c1 = Contact(name="john", org="wikipedia")
@@ -38,66 +40,39 @@ class AddressBook(Singleton):
         >>> a.add_contact(c3, auto_merge=False)
         >>> len(a.contacts)
         2
-
         """
         self._contacts = []
+        self._load_from_file()
 
-    @property
-    def contacts(self):
-        # type: () -> list
-        return self._contacts
+    @staticmethod
+    def _get_save_file_path():
+        return os.path.join(ZP_DATA_DIR, SAVE_FILENAME)
 
-    def add_contact(self, contact, auto_merge=True):
-        # type: (Contact, bool) -> None
-        if not auto_merge or not len(self.contacts):
-            self._contacts.append(contact)
-            return
-
-        duplicate = self.find_best_duplicate(contact)
-        if duplicate:
-            duplicate.merge(contact)
-        else:
-            self._contacts.append(contact)
-
-    def load_from_file(self):
-        save_path = self.get_save_file_path()
+    def _load_from_file(self):
+        save_path = self._get_save_file_path()
         if not os.path.exists(save_path):
             logger.error("Could not load. File {} not found".format(save_path))
             return
-        with open(self.get_save_file_path(), 'r') as f_save:
+        with open(self._get_save_file_path(), 'r') as f_save:
             self._contacts = pickle.load(f_save)
 
-    def save_to_file(self):
+    def _save_to_file(self):
         for c in self.contacts:
             c.consolidate()
-        with open(self.get_save_file_path(), 'w') as f_save:
+        with open(self._get_save_file_path(), 'w') as f_save:
             pickle.dump(self._contacts, f_save)
 
-    def reset(self):
-        self._contacts = []
-        self.save_to_file()
-
-    @staticmethod
-    def get_save_file_path():
-        return os.path.join(ZP_DATA_DIR, SAVE_FILENAME)
-
-    def find(self, **kwargs):
-        # type: (dict) -> Contact
-        # simple wrapper around find_best_duplicate
-        c = Contact(**kwargs)
-        return self.find_best_duplicate(c)
-
-    def get_contacts_with(self, attribute_name):
+    def _get_contacts_with(self, attribute_name):
         # type: (str) -> list
         return [c for c in self.contacts if len(getattr(c, attribute_name))]
 
-    def find_best_duplicate(self, contact):
+    def _find_best_duplicate(self, contact):
         # type: (Contact) -> Contact
-        match_score_contact_list = self.find_duplicates(contact)
+        match_score_contact_list = self._find_duplicates(contact)
         if match_score_contact_list[0][0] > 0:
             return match_score_contact_list[0][1]
 
-    def find_duplicates(self, contact):
+    def _find_duplicates(self, contact):
         # type: (Contact) -> list
         if contact in self._contacts:
             return [1, contact]
@@ -110,7 +85,59 @@ class AddressBook(Singleton):
 
         return sorted(match_score_contact_list, cmp=cmp)
 
+    @property
+    def contacts(self):
+        """ Returns a list containing all the contacts of this address book."""
+        # type: () -> list
+        return self._contacts
+
+    def add_contact(self, contact, auto_merge=True):
+        """Add a contact to this address book.
+
+        Args:
+
+            * ``contact``: the contact object to add
+
+        Kwargs:
+
+            * ``auto_merge``: wether to automatically merge ``contact`` if
+            there already is a similar entry in the address book
+        """
+        # type: (Contact, bool) -> None
+        if not auto_merge or not len(self.contacts):
+            self._contacts.append(contact)
+            return
+
+        duplicate = self._find_best_duplicate(contact)
+        if duplicate:
+            duplicate.merge(contact)
+        else:
+            self._contacts.append(contact)
+
+        # Save changes to disk
+        self._save_to_file()
+
+    def reset(self):
+        """Delete all the contacts of this address book."""
+        self._contacts = []
+        self._save_to_file()
+
+    def find(self, **kwargs):
+        """Search for a contact in this address book and return the best
+        match.
+        """
+        # type: (dict) -> Contact
+        # simple wrapper around find_best_duplicate
+        c = Contact(**kwargs)
+        return self._find_best_duplicate(c)
+
     def import_vcards_from_directory(self, directory):
+        """Import every VCF file in ``directory`` to this address book.
+
+        Args:
+
+            * ``directory``: absolute path to a directory containing VCF files
+        """
         logger.info("Import vCards from {}".format(directory))
 
         # Extract *cvf files from the directory
