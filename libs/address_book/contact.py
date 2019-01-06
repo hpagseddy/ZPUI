@@ -7,7 +7,8 @@ from helpers import setup_logger
 logger = setup_logger(__name__, "warning")
 
 class Contact(object):
-    """
+    """ Represents a contact as used by the address book.
+
     >>> c = Contact()
     >>> c.name
     []
@@ -26,7 +27,7 @@ class Contact(object):
         self.org = []
         self.photo = []
         self.title = []
-        self.from_kwargs(kwargs)
+        self._from_kwargs(kwargs)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -34,13 +35,50 @@ class Contact(object):
     def __str__(self):
         return str(self.__dict__)
 
-    def from_kwargs(self, kwargs):
-        provided_attrs = {attr: kwargs[attr] for attr in self.get_all_attributes() if attr in kwargs}
+    def _from_kwargs(self, kwargs):
+        provided_attrs = {attr: kwargs[attr] for attr in self._get_all_attributes() if attr in kwargs}
         for attr_name, attr_value in provided_attrs.items():
             if isinstance(attr_value, list):
                 setattr(self, attr_name, attr_value)
             else:
                 setattr(self, attr_name, [attr_value])
+
+    def _get_all_attributes(self):
+        return [a for a in dir(self) if not callable(getattr(self, a)) and not a.startswith("__")]
+
+    def _consolidate_attribute(self, attribute_name):
+        # type: (str) -> None
+        attr_value = getattr(self, attribute_name)
+        attr_value = flatten(attr_value)
+        # removes exact duplicates
+        attr_value = list(set([i.strip() for i in attr_value if isinstance(i, basestring)]))
+
+        attr_value[:] = [x for x in attr_value if not self._is_contained_in_other_element_of_the_list(x, attr_value)]
+
+        setattr(self, attribute_name, list(set(attr_value)))
+
+    @staticmethod
+    def _is_contained_in_other_element_of_the_list(p_element, the_list):
+        # type: (object, list) -> bool
+        copy = list(the_list)
+        copy.remove(p_element)
+        for element in copy:
+            if p_element in element:
+                return True
+        return False
+
+    def short_name(self):
+        for attr_name in self.get_filled_attributes():
+            for attribute in getattr(self, attr_name):
+                if not isinstance(attribute, basestring) and not isinstance(attribute, list):
+                    continue
+                if isinstance(attribute, list):
+                    for entry_str in attribute:
+                        if not isinstance(entry_str, basestring):
+                            continue
+                else:
+                    return attribute
+        return "unknown"
 
     def match_score(self, other):
         # type: (Contact) -> int
@@ -82,10 +120,10 @@ class Contact(object):
         """
         my_attributes = self.get_filled_attributes()
         for name in my_attributes:  # removes exact duplicates
-            self.consolidate_attribute(name)
+            self._consolidate_attribute(name)
 
     def get_filled_attributes(self):
-        """
+        """ Returns a list of the (non-empty) fields contained in this contact.
         >>> c = Contact()
         >>> c.name = ["John", "Johnny"]
         >>> c.note = ["That's him !"]
@@ -94,19 +132,6 @@ class Contact(object):
         """
         return [a for a in dir(self)
                 if not callable(getattr(self, a)) and not a.startswith("__") and len(getattr(self, a))]
-
-    def get_all_attributes(self):
-        return [a for a in dir(self) if not callable(getattr(self, a)) and not a.startswith("__")]
-
-    def consolidate_attribute(self, attribute_name):
-        # type: (str) -> None
-        attr_value = getattr(self, attribute_name)
-        attr_value = flatten(attr_value)
-        attr_value = list(set([i.strip() for i in attr_value if isinstance(i, basestring)]))  # removes exact duplicates
-
-        attr_value[:] = [x for x in attr_value if not self._is_contained_in_other_element_of_the_list(x, attr_value)]
-
-        setattr(self, attribute_name, list(set(attr_value)))
 
     def merge(self, other):
         # type: (Contact) -> None
@@ -126,34 +151,10 @@ class Contact(object):
             setattr(self, attr_name, attrs_sum)
         self.consolidate()
 
-    def short_name(self):
-        for attr_name in self.get_filled_attributes():
-            for attribute in getattr(self, attr_name):
-                if not isinstance(attribute, basestring) and not isinstance(attribute, list):
-                    continue
-                if isinstance(attribute, list):
-                    for entry_str in attribute:
-                        if not isinstance(entry_str, basestring):
-                            continue
-                else:
-                    return attribute
-        return "unknown"
-
     @staticmethod
     def common_attribute_count(a1, a2):
+        """Count the number of identical fields between two contacts."""
         # type: (list, list) -> int
         a1_copy = [i.lower() for i in a1 if isinstance(i, basestring)]
         a2_copy = [i.lower() for i in a2 if isinstance(i, basestring)]
         return len(set(a1_copy).intersection(a2_copy))
-
-    @staticmethod
-    def _is_contained_in_other_element_of_the_list(p_element, the_list):
-        """
-        """
-        # type: (object, list) -> bool
-        copy = list(the_list)
-        copy.remove(p_element)
-        for element in copy:
-            if p_element in element:
-                return True
-        return False

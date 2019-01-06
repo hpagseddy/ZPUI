@@ -40,6 +40,11 @@ class AddressBook(Singleton):
         >>> a.add_contact(c3, auto_merge=False)
         >>> len(a.contacts)
         2
+
+        Reset the address book
+        >>> a.reset()
+        >>> len(a.contacts)
+        0
         """
         self._contacts = []
         self._load_from_file()
