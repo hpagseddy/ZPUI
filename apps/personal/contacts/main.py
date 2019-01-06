@@ -1,7 +1,5 @@
 # coding=utf-8
 import argparse
-import doctest
-
 import os
 
 from apps import ZeroApp
@@ -11,10 +9,7 @@ from ui import (NumberedMenu, Listbox, Menu, LoadingIndicator, DialogBox,
 from distutils.spawn import find_executable
 
 from libs.address_book import AddressBook, Contact
-from libs.webdav.vdirsyncer import (vdirsyncer_sync, vdirsyncer_discover,
-                                    vdirsyncer_set_carddav_remote,
-                                    vdirsyncer_get_storage_directory_for,
-                                    vdirsyncer_generate_config)
+from libs.webdav import vdirsyncer
 
 logger = setup_logger(__name__, 'info')
 
@@ -24,7 +19,6 @@ class ContactApp(ZeroApp):
         self.menu_name = 'Contacts'
         self.address_book = AddressBook()
         self.menu = None
-        self.vdirsyncer_executable = find_executable('vdirsyncer')
 
     def on_start(self):
         self.reload()
@@ -71,14 +65,8 @@ class ContactApp(ZeroApp):
             self.reload()
 
     def synchronize_carddav(self):
-        if (not os.path.isfile(self.vdirsyncer_executable) or
-        not os.access(self.vdirsyncer_executable, os.X_OK)):
-            Printer('Could not execute vdirsyncer.', self.i, self.o,
-                    sleep_time=2, skippable=True)
-            return;
-
         with LoadingIndicator(self.i, self.o, message='Syncing contacts'):
-            exit_status = vdirsyncer_sync('contacts')
+            exit_status = vdirsyncer.sync('contacts')
 
         if (exit_status != 0):
             error_msg = "Error in contact synchronization. See ZPUI logs for \
@@ -88,7 +76,7 @@ class ContactApp(ZeroApp):
 
         with LoadingIndicator(self.i, self.o, message='Importing contacts'):
             self.address_book.import_vcards_from_directory(
-                vdirsyncer_get_storage_directory_for('contacts')
+                vdirsyncer.get_storage_directory_for('contacts')
             )
             self.address_book.save_to_file()
 
@@ -113,12 +101,12 @@ class ContactApp(ZeroApp):
         password = password_field.activate()
 
         # Update ZPUI vdirsyncer config, generate vdirsyncer config file
-        vdirsyncer_set_carddav_remote(url, username, password)
-        vdirsyncer_generate_config()
+        vdirsyncer.set_carddav_remote(url, username, password)
+        vdirsyncer.generate_config()
 
         # Initialize vdirsyncer remote
         with LoadingIndicator(self.i, self.o, message='Initializing remote'):
-            exit_status = vdirsyncer_discover('contacts')
+            exit_status = vdirsyncer.discover('contacts')
 
         if (exit_status != 0):
             error_msg = "Error in remote initialization. Check vdirsyncer \
