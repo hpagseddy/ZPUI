@@ -95,8 +95,14 @@ class ContactApp(ZeroApp):
 
         # Run wizard
         url = url_field.activate()
+        if not url: # If entry cancelled, exit the wizard
+            return
         username = username_field.activate()
+        if not username:
+            return
         password = password_field.activate()
+        if not password:
+            return
 
         # Update ZPUI vdirsyncer config, generate vdirsyncer config file
         vdirsyncer.set_carddav_remote(url, username, password)
