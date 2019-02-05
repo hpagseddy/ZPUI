@@ -144,4 +144,3 @@ def generate_config():
     # FIXME: ensure file is not world-readable
     with open(vdirsyncer_config_file, 'w') as fh:
         fh.write(rendered_vdirsyncer_config)
-        fh.close
