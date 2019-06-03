@@ -307,6 +307,31 @@ class Canvas(object):
         self.draw.ellipse(coords, outline=outline, fill=fill, **kwargs)
         self.display_if_interactive()
 
+    def arc(self, coords, start, end, **kwargs):
+        """
+        Draw an arc on the canvas. Coordinates are expected in
+        ``(x1, y1, x2, y2)`` format, where ``x1`` & ``y1`` are coordinates
+        of the top left corner, and ``x2`` & ``y2`` are coordinates
+        of the bottom right corner. ``start`` and ``end`` angles are
+        measured in degrees (360 is a full circle), start at 0 (3 o'clock)
+        and increase *clockwise*.
+
+        .. code_block:: python
+                270
+              225  315
+            180      0
+              135  45
+                 90
+
+        Keyword arguments:
+
+          * ``fill``: text color (default: white, as default canvas color)
+        """
+        coords = self.check_coordinates(coords)
+        fill = kwargs.pop("fill", self.default_color)
+        self.draw.arc(coords, start, end, fill=fill, **kwargs)
+        self.display_if_interactive()
+
     def get_image(self):
         """
         Get the current ``PIL.Image`` object.
@@ -553,6 +578,22 @@ class MockOutput(object):
 
     def display_image(self, *args):
         return True
+
+def crop(image, min_width=None, min_height=None, align=None):
+    bbox = image.getbbox()
+    print(bbox)
+    if bbox is None:
+        return Image.new(image.mode, (0, 0))
+    image = image.crop(bbox)
+    border = [0, 0, 0, 0]
+    if min_width and image.width<min_width:
+        border[0 if align == "right" else 2]=min_width-image.width
+    if min_height and image.height<min_height:
+        border[1 if align == "bottom" else 3]=min_height-image.height
+    print(border)
+    if border != [0, 0, 0, 0]:
+        image = ImageOps.expand(image, border=tuple(border), fill=Canvas.background_color)
+    return image
 
 def convert_flat_list_into_pairs(l):
     pl = []
