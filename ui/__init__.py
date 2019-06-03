@@ -27,6 +27,7 @@ from grid_menu import GridMenu
 from order_adjust import OrderAdjust
 from overlays import HelpOverlay, FunctionOverlay, GridMenuLabelOverlay, GridMenuSidebarOverlay
 from utils import fit_image_to_screen
+from zone import Zone, ZoneManager, ZoneSpacer, VerticalZoneSpacer
 from entry import Entry
 
 IntegerInDecrementInput = IntegerAdjustInput  # Compatibility with old ugly name

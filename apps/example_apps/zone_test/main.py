@@ -2,8 +2,8 @@ from datetime import datetime
 from time import sleep
 from copy import copy
 
-from ui.status import Zone, ZoneSpacer as ZS, VerticalZoneSpacer as VZS, ZoneManager
-from ui import MockOutput, Canvas
+from ui import MockOutput, Canvas, Zone, ZoneSpacer as ZS, \
+                VerticalZoneSpacer as VZS, ZoneManager
 
 from helpers import setup_logger
 
@@ -13,9 +13,6 @@ icon_canvas = Canvas(MockOutput(22, 8))
 hh_mm_canvas = Canvas(MockOutput(80, 30))
 ss_canvas = Canvas(MockOutput(20, 10))
 button_canvas = Canvas(MockOutput(40, 8))
-
-i = None
-o = None
 
 counter = 0
 
@@ -103,5 +100,6 @@ markup = [
 def callback():
     zm = ZoneManager(i, o, markup, zones)
     for x in range(5):
-        zm.show()
+        zm.update()
+        o.display_image(zm.get_image())
         sleep(1)
