@@ -58,7 +58,6 @@ def draw_display(value):
         icon_canvas.line((3, 6, 4, 6))
         icon_canvas.line((1, 7, 6, 7))
     image = crop(icon_canvas.get_image(), min_height=8, align="top")
-    print("display state: {} width: {}".format(value, image.width))
     return image
 
 def get_usb():
@@ -69,7 +68,6 @@ def draw_usb(value):
     if value:
         icon_canvas.text("U", (0, -1))
     image = crop(icon_canvas.get_image(), min_height=8, min_width=8, align="bottom")
-    print("usb state: {} width: {}".format(value, image.width))
     return image
 
 def get_wifi():

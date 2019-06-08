@@ -141,7 +141,7 @@ class ZoneManager(object):
             row_heights.append(row_height)
         if row_heights != self.row_heights:
             # Row heights changed!
-            print("Row heights changed!")
+            # print("Row heights changed!")
             self.row_heights = row_heights
             full_redraw = True
         # Calculating vertical spacing between rows
