@@ -17,9 +17,9 @@ class App(ZeroApp):
     def __init__(self, *args, **kwargs):
         ZeroApp.__init__(self, *args, **kwargs)
         self.zm = menu_markup.ZoneManager(self.i, self.o, menu_markup.markup,
-                                     menu_markup.zones)
+                                     menu_markup.zones, refresh_on_start=False)
         self.fo = FunctionOverlay(["deactivate", "deactivate"], labels=["Exit", "Tools"], wrap_view=False)
-        self.screen = Refresher(self.get_image, self.i, self.o, name="Main screen")
+        self.screen = MainScreen(self.get_image, self.i, self.o, name="Main screen", refresh_interval=1)
         self.fo.apply_to(self.screen)
 
     def get_image(self):
@@ -32,4 +32,17 @@ class App(ZeroApp):
         self.context = c
 
     def on_start(self, *args, **kwargs):
+        menu_markup.check_sources_polling()
+        menu_markup.update_sources()
+        self.zm.refresh_on_start()
         self.screen.activate()
+
+class MainScreen(Refresher):
+    def before_foreground(self, *a, **k):
+        menu_markup.check_sources_polling()
+        Refresher.before_foreground(self, *a, **k)
+
+    def refresh(self):
+        if self.is_active:
+            menu_markup.update_sources()
+        Refresher.refresh(self)

@@ -84,13 +84,14 @@ class VerticalZoneSpacer(ZoneSpacer):
 
 class ZoneManager(object):
 
-    def __init__(self, i, o, markup, zones, name="ZoneManager", **kwargs):
+    def __init__(self, i, o, markup, zones, name="ZoneManager", refresh_on_start=True, **kwargs):
         self.zones = zones
         self.markup = markup
         self.zones_that_need_refresh = {}
         self.row_heights = []
         self.item_widths = []
-        self.refresh_on_start()
+        if refresh_on_start:
+            self.refresh_on_start()
         self.name = name
         self.c = Canvas(o)
         self.o = o
@@ -106,7 +107,10 @@ class ZoneManager(object):
 
     def get_element_height(self, element):
         if element in self.zones:
-            return self.zones[element].get_image().height
+            image = self.zones[element].get_image()
+            if not image:
+                return 0
+            return image.height
         elif isinstance(element, VerticalZoneSpacer):
             return element.value
 

@@ -18,20 +18,31 @@ button_canvas = Canvas(MockOutput(40, 8))
 
 counter = 0
 
-def is_charging():
-    return counter % 2
+from zerophone import api as zp_api
+
+sources = ["wifi_connected", "wifi_strength", "dcdc_state", "charger_connected"]
+values = {}
+
+def check_sources_polling():
+    if not zp_api.check_polled_sources(sources):
+        zp_api.request_source_poll(sources)
+    while not zp_api.check_polled_sources(sources):
+        sleep(0.01)
+
+def update_sources():
+    global values
+    values = zp_api.get_sources(sources)
 
 def get_battery():
-    global counter
-    counter += 1
-    return counter
+    return (0, values["charger_connected"] == True)
 
 def draw_battery(value):
+    level, charger_state = value
     icon_canvas.clear()
     icon_canvas.rectangle((2, 0, 20, 7))
     icon_canvas.rectangle((6, 0, 20, 7), fill="white")
     icon_canvas.rectangle((0, 1, 2, 6), fill="white")
-    if is_charging():
+    if charger_state:
         icon_canvas.text("Ch", (7, -1), fill="black")
     return copy(icon_canvas.get_image())
 
@@ -61,7 +72,7 @@ def draw_display(value):
     return image
 
 def get_usb():
-    return counter % 3 == 1
+    return values["dcdc_state"] == True
 
 def draw_usb(value):
     icon_canvas.clear()
@@ -71,18 +82,22 @@ def draw_usb(value):
     return image
 
 def get_wifi():
-    return (counter % 2 == 1, "connected", counter)
+    return (values["wifi_connected"], values["wifi_strength"])
 
 def draw_wifi(value):
-    is_on, state, strength = value
-    strength = counter
-    offset = 9
+    is_on, strength = value
     icon_canvas.clear()
-    icon_canvas.text('W', (0, -1))
-    offset=7
-    strength = counter % 8
-    if strength > 0:
-        icon_canvas.line((offset, str(-strength), offset, 7))
+    if is_on:
+        icon_canvas.text('W', (0, -1))
+        offset = 7
+        strength_mapping = [-90, -80, -70, -65, -60, -50, -30]
+        level = 0
+        if strength is not None and strength > -80:
+            for i, element in enumerate(strength_mapping):
+                if strength >= element and strength < strength_mapping[i+1] if i+1 < len(strength_mapping) else 0:
+                    level = i
+                    break
+        icon_canvas.line((offset, str(-level), offset, 7))
     # top
     #icon_canvas.point( ((0, 1), (6, 1)), )
     #icon_canvas.line((1, 0, 5, 0), )
@@ -130,9 +145,3 @@ markup = [
   [VZS(2)],
   ["hh_mm", ZS(3), "ss"],
 ]
-
-def callback():
-    zm = ZoneManager(i, o, markup, zones)
-    for x in range(5):
-        zm.show()
-        sleep(1)
