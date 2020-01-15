@@ -20,20 +20,20 @@ def get_request(url):
     cont = unicode(req_get.content, "utf-8")
     if len(cont) == 0:
         if req_get.status_code == 200:
-            TextReader(html2text.html2text(cont), i, o)
+            TextReader(html2text.html2text(cont), i, o).activate()
         elif req_get.status_code == 404:
             Printer ("Error 404, Not Found!", i, o)
         elif req_get.status_code == 500:
             Printer ("Error 500, Internal server error!", i, o)
         else:
-            TextReader(html2text.html2text(cont), i, o)
+            TextReader(html2text.html2text(cont), i, o).activate()
     else:
-        TextReader(html2text.html2text(cont), i, o)
+        TextReader(html2text.html2text(cont), i, o).activate()
+
 
 def main():
 
-    input = UniversalInput(i, o, message="URL:", name="URL input")
-    link = input.activate()
+    link = UniversalInput(i, o, message="URL:", name="URL input").activate()
 
     get_request(link)
 
