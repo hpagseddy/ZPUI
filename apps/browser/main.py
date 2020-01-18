@@ -37,7 +37,7 @@ def main():
     
 
 def bookmark():
-    link = "https://www.google.com"
+    link = "https://wiki.zerophone.org/index.php/Main_Page"
     
     get_request(link)
 
