@@ -1,5 +1,3 @@
-
-
 from helpers import setup_logger
 
 import requests
@@ -36,6 +34,12 @@ def main():
     link = UniversalInput(i, o, message="URL:", name="URL input").activate()
 
     get_request(link)
+    
+
+def bookmark():
+    link = "https://www.google.com"
+    
+    get_request(link)
 
 #Callback global for ZPUI. It gets called when application is activated in the main menu
 callback = None
@@ -49,6 +53,7 @@ def init_app(input, output):
     o = output  # Getting references to output and input device objects and saving them as globals
     main_menu_contents = [
     ["Type URL", main],
+    ["Bookmark", bookmark],
     ["Exit", 'exit']]
     main_menu = Menu(main_menu_contents, i, o, "Browser Menu")
     callback = main_menu.activate
