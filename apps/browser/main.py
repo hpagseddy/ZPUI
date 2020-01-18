@@ -30,10 +30,10 @@ def get_request(url):
     else:
         TextReader(html2text.html2text(cont), i, o).activate()
 
+
 def main():
 
-    input = UniversalInput(i, o, message="URL:", name="URL input").activate()
-    link = input.activate()
+    link = UniversalInput(i, o, message="URL:", name="URL input").activate()
 
     get_request(link)
 
