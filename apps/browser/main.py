@@ -14,8 +14,12 @@ from ui import Menu, TextReader, Printer, MenuExitException, UniversalInput, Ref
 logger = setup_logger(__name__, "info")
 
 def get_request(url):
+    logger.info("Loading url: " + url)
     req_get = requests.get(url)
-    cont = unicode(req_get.content, "utf-8")
+    logger.info("Status: " + str(req_get.status_code))
+    cont = unicode(req_get.content, req_get.encoding)
+    logger.debug("Content: " + cont)
+    logger.debug("Content text: " + html2text.html2text(cont))
     if len(cont) == 0:
         if req_get.status_code == 200:
             TextReader(html2text.html2text(cont), i, o).activate()

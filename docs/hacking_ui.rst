@@ -45,13 +45,65 @@ If :doc:`existing UI elements <ui>` do not cover your usecase, you can also
 make your own UI elements! :doc:`Contact us <contact>` to find out how, 
 or just use the `code for existing UI elements`_ as guidelines if you feel confident.
 
-Also, check if the UI element you want is mentioned `in ZPUI TODO`_ and `ZPUI GH issues`_- 
+Also, check if the UI element you want is mentioned :doc:`in ZPUI TODO <plans>` and `ZPUI GH issues`_- 
 there might already be progress on that front, or you might find some 
 useful guidelines.
 
 .. _code for existing UI elements: https://github.com/ZeroPhone/ZPUI/tree/master/ui
-.. _in ZPUI TODO: http://zpui.readthedocs.io/en/latest/plans.html
 .. _ZPUI GH issues: https://github.com/ZeroPhone/ZPUI/issues
+
+Attaching to the ZPUI instance
+==============================
+
+In case where you need to debug some hiccup or simulate some condition in the
+framework itself, you can attach to the ZPUI instance and debug the framework's
+behaviour. This will not allow you to debug individual apps, however,
+if you need to attach to an app, you can modify its code in the same way that ZPUI
+``main.py`` itself was modified.
+
+First, you need to install ``python-rfoo`` from Debian repositories, if it's not
+installed already. ZeroPhone SD card images will have it installed by default,
+otherwise, here's how you do it:
+
+    ``sudo apt install python-rfoo``
+
+If you don't yet have it installed, it can be done any time before actually launching
+the debug console. Then, find PID of the current ZPUI instance:
+
+    ``ps ax|grep python``
+
+You might have multiple entries, one of them will look like "python main.py",
+get the PID from it. PID is the process number, which in our case is likely
+going to be from 3 to 5 digits long. Once you have the PID number, signal
+ZPUI to launch the console:
+
+    ``kill -USR2 74856`` (where ``74856`` is your PID number)
+
+Then, launch a Python interpreter and run the following commands:
+
+.. code-block:: python
+
+    from rfoo.utils import rconsole
+    rconsole.interact(port=9377)
+
+.. code-block:: console
+
+    pi@zerophone-prototype:~ $ python
+    Python 2.7.13 (default, Sep 26 2018, 18:42:22)
+    [GCC 6.3.0 20170516] on linux2
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> from rfoo.utils import rconsole
+    >>> rconsole.interact(port=9377)
+    Python 2.7.13 (default, Sep 26 2018, 18:42:22)
+    [GCC 6.3.0 20170516] on linux2
+    Type "help", "copyright", "credits" or "license" for more information.
+    (ProxyConsole)
+    >>>
+
+Tab completion is supported, and don't be afraid to use ``dir()`` to	 find out more
+about components.
+
+TODO: move this into ``debugging.rst``, once ``debugging.rst`` is brought up to date.
 
 Testing the UI
 ==============

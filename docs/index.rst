@@ -21,10 +21,14 @@ Guides:
 References:
 ===========
 
-* :doc:`UI elements <ui>`
-* :doc:`Helper functions <helpers>`
-* :doc:`Input system <input>`
-* :doc:`Output system <output>`
+- :doc:`Crash course <crash_course>`
+- :doc:`UI elements <ui>`
+- :doc:`Helper functions <helpers>`
+- :doc:`Input system <input>`
+
+  - :doc:`Keymaps <keymap>`
+
+- :doc:`Output system <output>`
 
 
 :doc:`Development plans <plans>`
@@ -40,9 +44,11 @@ References:
 
    setup.rst
    config.rst
+   crash_course.rst
    howto.rst
    ui.rst
    helpers.rst
+   keymap.rst
    hacking_ui.rst
    logging.rst
    app_mgmt.rst

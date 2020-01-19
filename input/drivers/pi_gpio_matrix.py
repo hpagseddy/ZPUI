@@ -11,10 +11,10 @@ class InputDevice(InputSkeleton):
     ["KEY_*", "KEY_0", "KEY_#"]]
 
     def __init__(self, cols=[5, 6, 13], rows=[12, 16, 20, 21], **kwargs):
-        """Initialises the ``InputDevice`` object. 
+        """Initialises the ``InputDevice`` object.
 
         Kwargs:
-        
+
         * ``button_pins``: GPIO mubers which to treat as buttons (GPIO.BCM numbering)
         * ``debug``: enables printing button press and release events when set to True
         """
@@ -29,13 +29,14 @@ class InputDevice(InputSkeleton):
     def init_hw(self):
         import RPi.GPIO as GPIO #Doing that because I couldn't mock it for ReadTheDocs
         self.GPIO = GPIO
-        GPIO.setmode(GPIO.BCM) 
+        GPIO.setmode(GPIO.BCM)
         for pin_num in self.rows:
             GPIO.setup(pin_num, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         for pin_num in self.cols:
             GPIO.setup(pin_num, GPIO.OUT)
             GPIO.output(pin_num, True)
         self.button_states = [[False for u in range(len(self.cols))] for i in range(len(self.rows))]
+        return None # Status reading not available
 
     def runner(self):
         """Polling loop. Stops when ``stop_flag`` is set to True."""
@@ -53,7 +54,7 @@ class InputDevice(InputSkeleton):
                         prev_state = self.button_states[row_num][col_num]
                         if state == True and prev_state == False:
                             key = self.mapping[row_num][col_num]
-                            self.send_key(key)
+                            self.map_and_send_key(key)
                         self.button_states[row_num][col_num] = state
                     for col in self.cols: self.GPIO.output(col, True)
             sleep(0.01)

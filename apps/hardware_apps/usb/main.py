@@ -1,24 +1,49 @@
-
-
 from helpers import setup_logger
 
 menu_name = "USB control"
 
 from zerophone_hw import USB_DCDC
 from ui import Menu, Printer
+from actions import BackgroundAction
 from time import sleep
 import os
 
 logger = setup_logger(__name__, "warning")
 i = None
 o = None
+context = None
 
 dcdc = USB_DCDC()
+dcdc_state = False
+
+def get_menu_name():
+    return "USB on" if dcdc_state else "USB off"
+
+def set_context(c):
+    global context
+    context = c
+    call_usb_app = lambda: context.request_switch()
+    context.register_action(BackgroundAction("usb_toggle", dcdc_toggle, menu_name=get_menu_name, description="Switches USB port power on or off", aux_cb=call_usb_app))
 
 def dcdc_off_on():
+    global dcdc_state
     dcdc.off()
     sleep(0.5)
     dcdc.on()
+    dcdc_state = True
+
+def dcdc_on():
+    global dcdc_state
+    dcdc.on()
+    dcdc_state = True
+
+def dcdc_off():
+    global dcdc_state
+    dcdc.off()
+    dcdc_state = False
+
+def dcdc_toggle():
+    dcdc_off() if dcdc_state else dcdc_on()
 
 usb_file = None
 usb_file_base_dir = "/sys/devices/platform/soc/"
@@ -39,11 +64,10 @@ def usb_off():
     with open(usb_full_path, "w") as f:
         f.write("0")
 
-
 main_menu_contents = [ 
 ["Restart 5V DC-DC", dcdc_off_on],
-["Turn 5V DC-DC on", dcdc.on],
-["Turn 5V DC-DC off", dcdc.off],
+["Turn 5V DC-DC on", dcdc_on],
+["Turn 5V DC-DC off", dcdc_off],
 ["Restart USB bus", usb_off_on],
 ["Turn USB bus on", usb_on],
 ["Turn USB bus off", usb_off]

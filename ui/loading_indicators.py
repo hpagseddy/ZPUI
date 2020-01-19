@@ -4,9 +4,9 @@ from threading import Thread
 from time import time
 
 from canvas import Canvas
-
-from ui import Refresher
-from ui.utils import clamp, Chronometer, to_be_foreground, Rect
+from refresher import Refresher
+from helpers import setup_logger
+from utils import clamp, Chronometer, to_be_foreground, Rect
 
 """
 These UI elements are used to show the user that something is happening in the background.
@@ -21,26 +21,62 @@ These classes are based on `Refresher`.
 
 # ========================= abstract classes =========================
 
+logger = setup_logger(__name__, "info")
+
+
+class Paused(object):
+    """Wrapping for a `paused` context manager for loading indicators. Allows for:
+
+    with li.paused:
+        do some stuff
+    """
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __enter__(self):
+        self.obj.pause()
+        return self
+
+    def __exit__(self, *args):
+        self.obj.resume()
+
 
 class BaseLoadingIndicator(Refresher):
     """Abstract class for "loading indicator" elements."""
+    on_left_cb = None
 
-    def __init__(self, i, o, *args, **kwargs):
+    def __init__(self, i, o, on_left=None, *args, **kwargs):
         self._progress = 0
+        if on_left:
+            self.set_on_left(on_left)
+        keymap = kwargs.get("keymap", {})
+        if "KEY_LEFT" not in keymap:
+            keymap["KEY_LEFT"] = "on_left"
+        kwargs["keymap"] = keymap
         Refresher.__init__(self, self.on_refresh, i, o, *args, **kwargs)
         self.t = None
+        self.paused = Paused(self)
+
+    def set_on_left(self, on_left):
+        self.on_left_cb = on_left
 
     def on_refresh(self):
         pass
+
+    def on_left(self):
+        if callable(self.on_left_cb):
+            self.on_left_cb()
+        else:
+            logger.warning("{}: User pressed LEFT but there's no LEFT handler, bad UX!".format(self.name))
 
     def set_message(self, new_message):
         self.message = new_message
         self.refresh()
 
     def run_in_background(self):
-        if self.t is not None or self.in_foreground:
+        if self.t is not None or self.is_active:
             raise Exception("BaseLoadingIndicator already running!")
-        self.t = Thread(target=self.activate)
+        self.t = Thread(target=self.activate, name="Background thread for LoadingIndicator {}".format(self.name))
         self.t.daemon = True
         self.t.start()
 
@@ -50,6 +86,7 @@ class BaseLoadingIndicator(Refresher):
 
     def __enter__(self):
         self.run_in_background()
+        self.wait_for_active()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -87,10 +124,9 @@ class Throbber(BaseLoadingIndicator):
         self.message = kwargs.pop("message", None)
         BaseLoadingIndicator.__init__(self, i, o, refresh_interval=0.01, *args, **kwargs)
 
-    def activate(self):
+    def before_activate(self):
         self.start_time = time()
         self.counter.start()
-        return Refresher.activate(self)
 
     @to_be_foreground
     def refresh(self):
@@ -282,7 +318,7 @@ class GraphicalProgressBar(ProgressIndicator):
 def ProgressBar(i, o, *args, **kwargs):
     """Instantiates and returns the appropriate kind of progress bar
     for the output device - either graphical or text-based."""
-    if "b&w-pixel" in o.type:
+    if "b&w" in o.type:
         return GraphicalProgressBar(i, o, *args, **kwargs)
     elif "char" in o.type:
         return TextProgressBar(i, o, *args, **kwargs)
@@ -290,10 +326,10 @@ def ProgressBar(i, o, *args, **kwargs):
         raise ValueError("Unsupported display type: {}".format(repr(o.type)))
 
 # noinspection PyPep8Naming
-def LoadingIndicator(i, o, *args, **kwargs):
+def LoadingBar(i, o, *args, **kwargs):
     """Instantiates and returns the appropriate kind of loading indicator
     for the output device - either graphical or text-based."""
-    if "b&w-pixel" in o.type:
+    if "b&w" in o.type:
         return Throbber(i, o, *args, **kwargs)
     elif "char" in o.type:
         return IdleDottedMessage(i, o, *args, **kwargs)
